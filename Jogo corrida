@@ -1,0 +1,239 @@
+<!DOCTYPE html><html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Corrida Suprema - Manager</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .menu, .corrida, .jornal, .mensagens {
+      max-width: 600px;
+      margin: auto;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+    }
+    button {
+      margin: 10px 0;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      background: #00aaff;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+    .oculto {
+      display: none;
+    }
+    select, input {
+      width: 100%;
+      padding: 8px;
+      margin: 10px 0;
+      border-radius: 6px;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Corrida Suprema</h1>
+  <div class="menu">
+    <h2>Equipe</h2>
+    <p><strong>Dinheiro:</strong> $<span id="dinheiro">10000</span></p>
+    <p><strong>Pontuação:</strong> <span id="pontuacao">0</span> pts</p>
+    <p><strong>Etapa:</strong> <span id="etapa">1</span>/5</p><h2>Categoria</h2>
+<select id="categoria">
+  <option value="Kart">Kart</option>
+  <option value="Turismo">Turismo</option>
+  <option value="F3">Fórmula 3</option>
+  <option value="F2">Fórmula 2</option>
+  <option value="F1">Fórmula Final</option>
+</select>
+
+<h2>Piloto</h2>
+<select id="piloto">
+  <option value="João">João - Habilidade 7 ($2000)</option>
+  <option value="Ana">Ana - Habilidade 8 ($3000)</option>
+  <option value="Carlos">Carlos - Habilidade 6 ($1500)</option>
+  <option value="Luiza" disabled>Luiza - Habilidade 9 ($4000) [Desbloquear com 20 pts]</option>
+</select>
+
+<h2>Estratégia</h2>
+<select id="estrategia">
+  <option value="agressivo">Agressivo</option>
+  <option value="equilibrado">Equilibrado</option>
+  <option value="conservador">Conservador</option>
+</select>
+
+<button onclick="iniciarCorrida()">Iniciar Corrida</button>
+
+  </div>  <div class="corrida oculto" id="resultadoCorrida">
+    <h2>Resultado da Corrida</h2>
+    <p id="eventoEspecial"></p>
+    <p id="resumo"></p>
+    <p id="ganho"></p>
+    <p id="pontuacaoResumo"></p>
+    <p id="rivalResumo"></p>
+    <button onclick="proximaEtapa()">Próxima Etapa</button>
+  </div>  <div class="jornal" id="jornal">
+    <h2>Jornal do Dia</h2>
+    <p id="noticia"></p>
+  </div>  <div class="mensagens" id="mensagens">
+    <h2>Caixa de Mensagens</h2>
+    <p id="mensagem"></p>
+  </div>  <script>
+    let dinheiro = 10000;
+    let pontuacao = 0;
+    let etapaAtual = 1;
+    const totalEtapas = 5;
+
+    const habilidades = {
+      "João": 7,
+      "Ana": 8,
+      "Carlos": 6,
+      "Luiza": 9
+    };
+
+    const custos = {
+      "João": 2000,
+      "Ana": 3000,
+      "Carlos": 1500,
+      "Luiza": 4000
+    };
+
+    const estrategiaBonus = {
+      "agressivo": 2,
+      "equilibrado": 1,
+      "conservador": 0
+    };
+
+    const premios = {
+      "1º lugar": 5000,
+      "2º lugar": 3000,
+      "3º lugar": 1000,
+      "fora do pódio": 0
+    };
+
+    const pontos = {
+      "1º lugar": 10,
+      "2º lugar": 6,
+      "3º lugar": 3,
+      "fora do pódio": 0
+    };
+
+    const eventosEspeciais = [
+      "Chuva intensa!", 
+      "Falha no motor!",
+      "Acidente na pista!",
+      "Corrida noturna!",
+      "Pista molhada!",
+      "Tudo normal."
+    ];
+
+    function desbloquearPilotoSeNecessario() {
+      const luizaOption = document.querySelector("option[value='Luiza']");
+      if (pontuacao >= 20) {
+        luizaOption.disabled = false;
+        luizaOption.textContent = "Luiza - Habilidade 9 ($4000)";
+      }
+    }
+
+    function gerarNoticia(piloto, posicao, etapa) {
+      const comentarios = [
+        `Grande destaque para ${piloto}, que conquistou o ${posicao} na etapa ${etapa}!`,
+        `${piloto} surpreendeu a todos com seu desempenho em ${posicao}.`,
+        `Etapa ${etapa}: ${piloto} mostra regularidade ao terminar em ${posicao}.`,
+        `Equipe ${piloto} enfrenta desafios mas consegue ${posicao}.`
+      ];
+      return comentarios[Math.floor(Math.random() * comentarios.length)];
+    }
+
+    function gerarMensagem(posicao) {
+      if (posicao === "1º lugar") {
+        return "Parabéns! Uma equipe da F2 demonstrou interesse em contratá-lo futuramente.";
+      } else if (posicao === "2º lugar") {
+        return "Equipe de Turismo comentou seu desempenho. Fique de olho em novas propostas.";
+      } else if (posicao === "3º lugar") {
+        return "Seu nome apareceu em uma lista de jovens promessas.";
+      } else {
+        return "Nenhuma nova mensagem no momento.";
+      }
+    }
+
+    function iniciarCorrida() {
+      desbloquearPilotoSeNecessario();
+
+      const categoria = document.getElementById('categoria').value;
+      const piloto = document.getElementById('piloto').value;
+      const estrategia = document.getElementById('estrategia').value;
+
+      const custoPiloto = custos[piloto];
+      if (dinheiro < custoPiloto) {
+        alert("Dinheiro insuficiente para contratar esse piloto!");
+        return;
+      }
+
+      dinheiro -= custoPiloto;
+
+      const evento = eventosEspeciais[Math.floor(Math.random() * eventosEspeciais.length)];
+      let penalidade = evento.includes("Falha") || evento.includes("Acidente") ? -2 : evento.includes("Chuva") || evento.includes("molhada") ? -1 : 0;
+
+      const habilidadePiloto = habilidades[piloto];
+      const bonus = estrategiaBonus[estrategia];
+      const desempenho = habilidadePiloto + bonus + Math.floor(Math.random() * 3) + penalidade;
+
+      const desempenhoRival = 6 + Math.floor(Math.random() * 5);
+      const rivalPosicao = desempenhoRival > desempenho ? "venceu você" : desempenhoRival === desempenho ? "empatou com você" : "ficou atrás de você";
+
+      let posicao = desempenho >= 10 ? "1º lugar" : desempenho >= 8 ? "2º lugar" : desempenho >= 6 ? "3º lugar" : "fora do pódio";
+      let ganho = premios[posicao];
+      let pontosGanhos = pontos[posicao];
+
+      dinheiro += ganho;
+      pontuacao += pontosGanhos;
+
+      document.getElementById('eventoEspecial').innerText = `Evento: ${evento}`;
+      document.getElementById('resumo').innerText = `Etapa ${etapaAtual}: Na categoria ${categoria}, ${piloto} correu com estratégia ${estrategia} e terminou em ${posicao}.`;
+      document.getElementById('ganho').innerText = `Você ganhou $${ganho}.`;
+      document.getElementById('pontuacaoResumo').innerText = `Você ganhou ${pontosGanhos} ponto(s).`;
+      document.getElementById('rivalResumo').innerText = `Rival ${rivalPosicao}.`;
+
+      document.getElementById('noticia').innerText = gerarNoticia(piloto, posicao, etapaAtual);
+      document.getElementById('mensagem').innerText = gerarMensagem(posicao);
+
+      document.getElementById('dinheiro').innerText = dinheiro;
+      document.getElementById('pontuacao').innerText = pontuacao;
+
+      document.querySelector('.menu').classList.add('oculto');
+      document.getElementById('resultadoCorrida').classList.remove('oculto');
+    }
+
+    function proximaEtapa() {
+      etapaAtual++;
+      document.getElementById('etapa').innerText = etapaAtual;
+      document.querySelector('.menu').classList.remove('oculto');
+      document.getElementById('resultadoCorrida').classList.add('oculto');
+
+      if (etapaAtual > totalEtapas) {
+        alert(`Fim do campeonato! Você fez ${pontuacao} pontos e ficou com $${dinheiro}.`);
+        reiniciarJogo();
+      }
+    }
+
+    function reiniciarJogo() {
+      dinheiro = 10000;
+      pontuacao = 0;
+      etapaAtual = 1;
+      document.getElementById('dinheiro').innerText = dinheiro;
+      document.getElementById('pontuacao').innerText = pontuacao;
+      document.getElementById('etapa').innerText = etapaAtual;
+    }
+  </script></body>
+</html>
